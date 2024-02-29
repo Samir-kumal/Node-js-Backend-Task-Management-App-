@@ -1,6 +1,6 @@
 const User = require("../models/user");
 const jwt = require("jsonwebtoken");
-
+const sendVerificationMail = require("../utils/sendVerificationMail");
 const createToken = (id, userName, userEmail) => {
   const payload = {
     userId: id,
@@ -22,13 +22,35 @@ const createUser = async (req, res) => {
     if (oldUser) {
       return res.status(400).json({ message: "User already exists" });
     }
-    const newUser = new User({ name, email, password, boards: [] });
+    const newUser = new User({ name, email, password, boards: [], emailToken: jwt.sign({email}, process.env.JWT_SECRET, {expiresIn: 60 * 60 * 24 * 3})});
     await newUser.save();
+    sendVerificationMail(email, newUser.emailToken);
     res.status(200).json({ message: "User registered successfully" });
   } catch (err) {
     console.log(err.message);
   }
 };
+
+const verifyEmail = async (req, res)=>{
+  const emailToken = req.body.emailToken; 
+  // console.log(emailToken);
+  if (!emailToken) {
+    return res.status(400).json({ message: "Token not found" });
+  }
+  try{
+    const user = await User.findOne({emailToken});
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+ 
+   // user.emailToken = null;
+   await user.save();
+    res.status(200).json({ message: "Email verified successfully" });
+  }catch(err){
+    console.log(err.message);
+
+  }
+}
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -131,6 +153,7 @@ const deleteUser = async (req, res) => {
 
 module.exports = {
   createUser,
+  verifyEmail,
   loginUser,
   getUser,
   validateUserPassword,
