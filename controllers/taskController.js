@@ -1,5 +1,6 @@
 const Task = require("../models/task");
 const Board = require("../models/board");
+const User = require("../models/user")
 const createTask = async (req, res) => {
   const { boardId } = req.params;
   const { title, content, status } = req.body;
@@ -22,19 +23,74 @@ const createTask = async (req, res) => {
     console.log(err.message);
   }
 };
+
+const getAllTasks = async(req, res) =>{
+  const {userId} = req.params;
+  try {
+    const tasks = await Task.find();
+    if (tasks.length === 0) {
+      return res.status(404).json({ message: "No tasks found" });
+    }
+    return res.status(200).json(tasks);
+  } catch (err) {
+    console.log(err.message);
+  }
+
+}
+const getAllTaskItems = async (req, res) => {
+  const { userId } = req.params;
+  console.log(userId)
+  try {
+    const allTasks = await Board.aggregate([
+      {
+        $match: { 
+          _id: { $in: (await User.findById(userId)).boards }
+        }
+      },
+      {
+        $lookup: {
+          from: "tasks",
+          localField: "tasks",
+          foreignField: "_id",
+          as: "tasks"
+        }
+      },
+      {
+        $project: {
+          tasks: 1
+        }
+      },
+      {
+        $unwind: "$tasks"
+      },
+      {
+        $replaceRoot: { newRoot: "$tasks" }
+      }
+    ]);
+
+    if (allTasks.length > 0) {
+      return res.status(200).json(allTasks);
+    } else {
+      return res.status(404).json({ message: "No tasks found" });
+    }
+  } catch (err) {
+    console.log(err.message);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 const getTasks = async (req, res) => {
   const { boardId } = req.params;
   try {
     const board = await Board.findById(boardId).populate("tasks");
     if (!board) return res.status(404).json({ message: "Board not found" });
-    if (board.tasks.length === 0) {
-      return res.status(404).json({ message: "No tasks found" });
-    }
+    
     return res.status(200).json(board.tasks);
   } catch (err) {
     console.log(err.message);
   }
 };
+
 const deleteTask = async (req, res) => {
   const { taskId } = req.params;
   try {
@@ -63,4 +119,4 @@ const updateTask = async (req, res) => {
     console.log(err.message);
   }
 };
-module.exports = { createTask, getTasks, updateTask, deleteTask };
+module.exports = { createTask, getTasks,getAllTasks, updateTask, deleteTask,getAllTaskItems };
