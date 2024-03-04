@@ -9,7 +9,7 @@ const createBoard = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(400).json({ message: "User not found" });
 
-    const newBoard = new Board({ title });
+    const newBoard = new Board({ title, tasks:[] });
     await newBoard.save();
     user.boards.push(newBoard);
     await user.save();
@@ -26,7 +26,7 @@ const getBoards = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    if (user.boards.length > 0) {
+    if (user.boards) {
      return res.status(200).json(user.boards);
     }
     return res.status(404).json({ message: "No boards found" });
