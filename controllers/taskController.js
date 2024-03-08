@@ -3,17 +3,17 @@ const User = require("../models/user");
 const createTask = async (req, res) => {
   const { boardId } = req.params;
   console.log("hello");
-  const { title, content, status } = req.body;
+  const { title, content, status, priority } = req.body;
   if (!boardId) {
     return res.status(400).json({ message: "boardId not provided" });
   }
-  if (!title || !content || !status) {
+  if (!title || !content || !status || !priority) {
     return res
       .status(400)
-      .json({ message: "Title, content and status are required" });
-  }
+      .json({ message: "Title, content, status and priority  are required" });
+  } 
   try {
-    const newTask = { title, content, status };
+    const newTask = { title, content, status, priority };
     const board = await Board.findById(boardId);
     board.tasks.push(newTask);
     await board.save();
@@ -67,7 +67,7 @@ const deleteTask = async (req, res) => {
     if (!board) {
       return res.status(404).json({ message: "Board does not exist" });
     }
-    const taskIndex = board.tasks.findIndex((task) => task._id === taskId);
+    const taskIndex = board.tasks.findIndex((task) => task._id.toString() === taskId);
     if (taskIndex === -1) {
       return res.status(404).json({ message: "Task not found in the board" });
     }
@@ -81,25 +81,27 @@ const deleteTask = async (req, res) => {
 };
 const updateTask = async (req, res) => {
   const { taskId, boardId } = req.params;
-  const { title, content, status } = req.body;
-  if (!title || !content || !status) {
+  console.log("taskId", taskId, "boardId", boardId);
+  const { title, content, status, priority } = req.body;
+  if (!title || !content || !status || !priority) {
     return res
       .status(400)
-      .json({ message: "Title, content and status are required" });
+      .json({ message: "Title, content, status and priority are required" });
   }
   try {
     const board = await Board.findById(boardId);
     if (!board) {
       return res.status(404).json({ message: "Board not Found" });
     }
-    const taskIndex = board.tasks.findIndex((task) => task._id === taskId);
+    const taskIndex = board.tasks.findIndex((task) => task._id.toString() === taskId);
     if (taskIndex === -1) {
-      return res.status(404).json({ message: "Task not found" });
+      return res.status(404).json(taskIndex );
     }
 
     board.tasks[taskIndex].title = title;
-    board.tasks[taskIndex].content = title;
-    board.tasks[taskIndex].status = title;
+    board.tasks[taskIndex].content = content;
+    board.tasks[taskIndex].status = status;
+    board.tasks[taskIndex].priority= priority;
 
     await board.save();
     return res.status(200).json({ message: "Task updated successfully" });
