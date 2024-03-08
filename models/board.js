@@ -13,7 +13,7 @@ const boardSchema = new mongoose.Schema({
       },
       status: {
         type: String,
-        required: true,
+        required: true, 
         enum: ["todo", "doing", "done"],
       },
       priority: {
@@ -23,5 +23,9 @@ const boardSchema = new mongoose.Schema({
       }
     },
   ],
+  created: {
+    type:Date,
+    default: Date.now()
+  }
 });
 module.exports = mongoose.model("Board", boardSchema);
